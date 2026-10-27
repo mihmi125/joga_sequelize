@@ -1,38 +1,27 @@
-const express = require("express");
-const app = express();
+require("dotenv").config();
 
-// parse requests of content-type - application/json
-app.use(express.json());
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true }));
+const Application = require("./app");
+const sequelize = require("./config/database");
 
-// connect to database
-const Sequelize = require("sequelize");
-const sequelize = new Sequelize('mysql://root:qwerty@localhost:3306/joga_sequelize');
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Connected to the database.");
 
-// testing connection
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log('Connected to the database.');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+    const application = new Application(sequelize);
+    const app = application.getApp();
 
-// using routes and controllers
-const articleRouter = require('./routes/article');
-app.use('/', articleRouter);
-app.use('/article', articleRouter);
-app.use('/author', articleRouter);
-app.use('/admin/article', articleRouter);
+    app.listen(3026, () => {
+      console.log(
+        "Server running on http://localhost:3026"
+      );
+    });
+  } catch (error) {
+    console.error(
+      "Unable to start application:",
+      error
+    );
+  }
+};
 
-// simple route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to sequelize application." });
-});
-
-// listen requests
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
-});
+startServer();
