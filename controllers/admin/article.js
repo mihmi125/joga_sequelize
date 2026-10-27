@@ -27,6 +27,31 @@ const createArticle = (req, res) => {
     });
 };
 
+const updateArticle = (req, res) => {
+  if (req.method === 'GET') {
+    models.Article.findByPk(req.params.id)
+      .then(article => {
+        return res.status(200).json({ article });
+      })
+      .catch(error => res.status(500).send(error.message));
+  } else if (req.method === 'POST') {
+    models.Article.update({
+      name: req.body.name,
+      slug: req.body.slug,
+      image: req.body.image,
+      body: req.body.body,
+      author_id: req.body.author
+    }, {
+      where: { id: req.params.id }
+    })
+      .then(() => {
+        return res.status(200).json({ message: 'Article updated successfully' });
+      })
+      .catch(error => res.status(500).send(error.message));
+  }
+};
+
 module.exports = {
-  createArticle
+  createArticle,
+  updateArticle
 };
