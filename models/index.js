@@ -1,43 +1,46 @@
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const Sequelize = require('sequelize');
-const process = require('process');
-const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
-const db = {};
+const fs = require("fs").promises;
+const path = require("path");
+const Sequelize = require("sequelize");
 
-let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
+const sequelize = require("../config/database");
 
-fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  })
-  .forEach(file => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
+const loadModels = async () => {
+  const db = {};
+
+  // 1. Loeme asünkroonselt models kataloogi failid
+  const files = await fs.readdir(__dirname);
+
+  // 2. Filtreerime välja mudelifailid
+  const modelFiles = files.filter(file =>
+    !file.startsWith(".") &&
+    file !== "index.js" &&
+    file.endsWith(".js") &&
+    !file.endsWith(".test.js")
+  );
+
+  // 3. Laeme ja initsialiseerime mudeliklassid
+  for (const file of modelFiles) {
+    const model = require(
+      path.join(__dirname, file)
+    )(sequelize, Sequelize.DataTypes);
+
     db[model.name] = model;
-  });
-
-Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
   }
-});
 
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
+  // 4. Loome mudelitevahelised assotsiatsioonid
+  for (const modelName of Object.keys(db)) {
+    if (typeof db[modelName].associate === "function") {
+      db[modelName].associate(db);
+    }
+  }
 
-module.exports = db;
+  // 5. Lisame Sequelize instantsi db objektile
+  db.sequelize = sequelize;
+  db.Sequelize = Sequelize;
+
+  return db;
+};
+
+module.exports = loadModels;
