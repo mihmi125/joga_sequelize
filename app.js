@@ -1,8 +1,13 @@
-const express = require("express");
+const express = require('express');
+
+const ArticleRepository = require('./repositories/ArticleRepository');
+const ArticleService = require('./services/ArticleService');
+const ArticleController = require('./controllers/ArticleController');
+const ArticleRouter = require('./routes/ArticleRouter');
 
 class Application {
-  constructor(database) {
-    this.database = database;
+  constructor(db) {
+    this.db = db;
     this.app = express();
 
     this.configureMiddleware();
@@ -18,11 +23,12 @@ class Application {
   }
 
   configureRoutes() {
-    this.app.get("/", (req, res) => {
-      res.status(200).json({
-        message: "Welcome to sequelize application."
-      });
-    });
+    const articleRepository = new ArticleRepository(this.db.Article);
+    const articleService = new ArticleService(articleRepository);
+    const articleController = new ArticleController(articleService);
+    const articleRouter = new ArticleRouter(articleController);
+
+    this.app.use('/', articleRouter.getRouter());
   }
 
   getApp() {
