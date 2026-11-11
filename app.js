@@ -4,6 +4,7 @@ const ArticleRepository = require('./repositories/ArticleRepository');
 const ArticleService = require('./services/ArticleService');
 const ArticleController = require('./controllers/ArticleController');
 const ArticleRouter = require('./routes/ArticleRouter');
+const errorHandler = require('./middleware/errorHandler');
 
 class Application {
   constructor(db) {
@@ -16,10 +17,7 @@ class Application {
 
   configureMiddleware() {
     this.app.use(express.json());
-
-    this.app.use(express.urlencoded({
-      extended: true
-    }));
+    this.app.use(express.urlencoded({ extended: true }));
   }
 
   configureRoutes() {
@@ -29,6 +27,9 @@ class Application {
     const articleRouter = new ArticleRouter(articleController);
 
     this.app.use('/', articleRouter.getRouter());
+
+    // Keskse veahalduri registreerimine ruuterite järel
+    this.app.use(errorHandler);
   }
 
   getApp() {
